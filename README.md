@@ -1,5 +1,4 @@
-# stripanswers
-Strip "answers" from PowerPoint pptx files
+# stripanswers -- Strip "answers" from PowerPoint pptx lecture files
 
 When teaching I like to provide my students with printed copies of my slides but that leads to a dilemma:
 When I pose questions on the slides, should I include the answers?
