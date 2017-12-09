@@ -11,6 +11,12 @@ Example line:
     A<a:p><a:r><a:rPr lang="en-US" sz="2400" dirty="0" /><a:t>   </a:t></a:r><a:r><a:rPr lang="en-US" sz="2400" dirty="0" smtClean="0" /><a:t>(</a:t></a:r><a:r><a:rPr lang="en-US" sz="2400" dirty="0" smtClean="0" /><a:t>700 </a:t></a:r><a:r><a:rPr lang="en-US" sz="2400" dirty="0" smtClean="0" /><a:t>+/-) </a:t></a:r><a:r><a:rPr lang="en-US" sz="500" baseline="-25000" dirty="0" smtClean="0" /><a:t>@a</a:t></a:r><a:endParaRPr lang="en-US" sz="500" baseline="-25000" dirty="0" /></a:p>B
 
     https://docs.python.org/3/library/xml.etree.elementtree.html#module-xml.etree.ElementTree
+
+Haskell slides with answers at present: 9, 18-21, 50, 56
+
+Next:
+    Maybe use a 0/0/1 "black" to mark answers, instead of @a
+        How could that be found?  VBA macro?    
     
 """
 #
@@ -30,6 +36,11 @@ def main(fn):
         raise RuntimeError("Files need to be .pptx files.")
     old = zipfile.ZipFile(fn, "r")
     fn2 = fn.replace(".pptx","-noans.pptx")
+    try:
+        os.remove(fn2)
+    except:
+        pass
+
     new = zipfile.ZipFile(fn2, "w")
     for item in old.infolist():
         data = old.read(item.filename)
@@ -39,6 +50,7 @@ def main(fn):
             data = strip_answers(data.decode()).encode()
         new.writestr(item, data)
     new.close()
+    os.chmod(fn2, 0o444)
     old.close()
     print("Complete. Saved as", fn2)
     
