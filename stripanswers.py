@@ -48,9 +48,11 @@ def strip_answers(text):
 """
 
 def strip_answers(s):
-    marker_pos = s.find("<a:t>@a</a:t>")
-    if marker_pos == -1:
+    m = re.search(r"<a:t>\s*@a\s*</a:t>", s)
+    if not m:
         return s
+
+    marker_pos = m.span()[0]
         
     start = s.rfind("<a:p>", 0, marker_pos)
     end_str = "</a:p>"
@@ -63,28 +65,31 @@ def blank_out_text(s):
     if not m:
         return s
     g = m.groups()
-    return g[0] + g[2] + blank_out_text(g[3])
+    #
+    # Replace the string with a blank else we lose the vertical space for the line
+    return g[0] + " " + g[2] + blank_out_text(g[3])
 
 class Test(unittest.TestCase):
     def testClearAT(self):
-        self.assertEqual("<a:t></a:t>", blank_out_text("<a:t>(700 +/-) </a:t>"))
-        self.assertEqual("<a:t></a:t>", blank_out_text("<a:t>(700 +/-) </a:t>"))
-        self.assertEqual("A<a:t></a:t>B<a:t></a:t>C", blank_out_text("A<a:t>(700 +/-) </a:t>B<a:t>XXX</a:t>C"))
+        self.assertEqual("<a:t> </a:t>", blank_out_text("<a:t>(700 +/-) </a:t>"))
+        self.assertEqual("<a:t> </a:t>", blank_out_text("<a:t>(700 +/-) </a:t>"))
+        self.assertEqual("A<a:t> </a:t>B<a:t> </a:t>C", blank_out_text("A<a:t>(700 +/-) </a:t>B<a:t>XXX</a:t>C"))
 
     def testRemove(self):
         self.assertEqual("AB", strip_answers("AB"))
-        self.assertEqual("A<a:p><a:t></a:t><a:t></a:t></a:r>d</a:p>B", strip_answers("A<a:p><a:t>The Answer</a:t><a:t>@a</a:t></a:r>d</a:p>B"))
-        self.assertEqual("A<a:p><a:t></a:t><a:t></a:t></a:r>d</a:p>BC<a:p><a:t></a:t><a:t></a:t></a:r>d</a:p>D", strip_answers("A<a:p><a:t>The Answer</a:t><a:t>@a</a:t></a:r>d</a:p>BC<a:p><a:t>The Answer</a:t><a:t>@a</a:t></a:r>d</a:p>D"))
+        self.assertEqual("A<a:p><a:t> </a:t><a:t> </a:t></a:r>d</a:p>B", strip_answers("A<a:p><a:t>The Answer</a:t><a:t>@a</a:t></a:r>d</a:p>B"))
+        self.assertEqual("A<a:p><a:t> </a:t><a:t> </a:t></a:r>d</a:p>BC<a:p><a:t> </a:t><a:t> </a:t></a:r>d</a:p>D",
+           strip_answers("A<a:p><a:t>The Answer</a:t><a:t>@a</a:t></a:r>d</a:p>BC<a:p><a:t>The Answer</a:t><a:t>@a</a:t></a:r>d</a:p>D"))
         self.assertEqual(
-                'A<a:p><a:r><a:rPr lang="en-US" sz="2400" dirty="0" /><a:t></a:t></a:r><a:r><a:rPr lang="en-US" sz="2400" dirty="0" smtClean="0" /><a:t></a:t></a:r><a:r><a:rPr lang="en-US" sz="2400" dirty="0" smtClean="0" /><a:t></a:t></a:r><a:r><a:rPr lang="en-US" sz="2400" dirty="0" smtClean="0" /><a:t></a:t></a:r><a:r><a:rPr lang="en-US" sz="500" baseline="-25000" dirty="0" smtClean="0" /><a:t></a:t></a:r><a:endParaRPr lang="en-US" sz="500" baseline="-25000" dirty="0" /></a:p>B',
+                'A<a:p><a:r><a:rPr lang="en-US" sz="2400" dirty="0" /><a:t> </a:t></a:r><a:r><a:rPr lang="en-US" sz="2400" dirty="0" smtClean="0" /><a:t> </a:t></a:r><a:r><a:rPr lang="en-US" sz="2400" dirty="0" smtClean="0" /><a:t> </a:t></a:r><a:r><a:rPr lang="en-US" sz="2400" dirty="0" smtClean="0" /><a:t> </a:t></a:r><a:r><a:rPr lang="en-US" sz="500" baseline="-25000" dirty="0" smtClean="0" /><a:t> </a:t></a:r><a:endParaRPr lang="en-US" sz="500" baseline="-25000" dirty="0" /></a:p>B',
                 strip_answers('A<a:p><a:r><a:rPr lang="en-US" sz="2400" dirty="0" /><a:t>   </a:t></a:r><a:r><a:rPr lang="en-US" sz="2400" dirty="0" smtClean="0" /><a:t>(</a:t></a:r><a:r><a:rPr lang="en-US" sz="2400" dirty="0" smtClean="0" /><a:t>700 </a:t></a:r><a:r><a:rPr lang="en-US" sz="2400" dirty="0" smtClean="0" /><a:t>+/-) </a:t></a:r><a:r><a:rPr lang="en-US" sz="500" baseline="-25000" dirty="0" smtClean="0" /><a:t>@a</a:t></a:r><a:endParaRPr lang="en-US" sz="500" baseline="-25000" dirty="0" /></a:p>B'))
 
 
-        self.assertEqual("A<a:p>...</a:p>B<a:p><a:t></a:t><a:t></a:t></a:r>d</a:p>C", strip_answers("A<a:p>...</a:p>B<a:p><a:t>The Answer</a:t><a:t>@a</a:t></a:r>d</a:p>C"))
+        self.assertEqual("A<a:p>...</a:p>B<a:p><a:t> </a:t><a:t> </a:t></a:r>d</a:p>C", strip_answers("A<a:p>...</a:p>B<a:p><a:t>The Answer</a:t><a:t>@a</a:t></a:r>d</a:p>C"))
 
 
 if __name__ == '__main__':
-    unittest.main(); sys.exit(1)
+    #unittest.main(); sys.exit(1)
     try:
         if len(sys.argv) > 1:
             #
