@@ -36,7 +36,7 @@ def main(fn):
         if item.filename.startswith("ppt/slides/slide") \
                 and item.filename.endswith(".xml"):
             print(". . .", "cleaning", item.filename)
-            #data = strip_answers(data)
+            data = strip_answers(data.decode()).encode()
         new.writestr(item, data)
     new.close()
     old.close()
@@ -49,22 +49,38 @@ def strip_answers(text):
 
 def strip_answers(s):
     marker_pos = s.find("<a:t>@a</a:t>")
-    
     if marker_pos == -1:
         return s
         
-    start = s.rfind("<a:p>", marker_pos)
+    start = s.rfind("<a:p>", 0, marker_pos)
     end_str = "</a:p>"
     endpos = s.find(end_str, marker_pos) + len(end_str)
-    return s[:start] + strip_answer(s[endpos:])
+    anspar = s[start:endpos]
+    return s[:start] + blank_out_text(anspar) + strip_answers(s[endpos:])
+
+def blank_out_text(s):
+    m = re.match(r'(.*?<a:t>)(.*?)(</a:t>)(.*$)', s)
+    if not m:
+        return s
+    g = m.groups()
+    return g[0] + g[2] + blank_out_text(g[3])
 
 class Test(unittest.TestCase):
-    def testRemove(self):
-        self.assertEqual(b"AB", strip_answers(b"A<a:p>The Answer<a:t>@a</a:t></a:r>d</a:p>B"))
-        self.assertEqual(b"ABCD", strip_answers(b"A<a:p>The Answer<a:t>@a</a:t></a:r>d</a:p>BC<a:p>The Answer<a:t>@a</a:t></a:r>d</a:p>D"))
-        self.assertEqual(b"AB", strip_answers(b'A<a:p><a:r><a:rPr lang="en-US" sz="2400" dirty="0" /><a:t>   </a:t></a:r><a:r><a:rPr lang="en-US" sz="2400" dirty="0" smtClean="0" /><a:t>(</a:t></a:r><a:r><a:rPr lang="en-US" sz="2400" dirty="0" smtClean="0" /><a:t>700 </a:t></a:r><a:r><a:rPr lang="en-US" sz="2400" dirty="0" smtClean="0" /><a:t>+/-) </a:t></a:r><a:r><a:rPr lang="en-US" sz="500" baseline="-25000" dirty="0" smtClean="0" /><a:t>@a</a:t></a:r><a:endParaRPr lang="en-US" sz="500" baseline="-25000" dirty="0" /></a:p>B'))
+    def testClearAT(self):
+        self.assertEqual("<a:t></a:t>", blank_out_text("<a:t>(700 +/-) </a:t>"))
+        self.assertEqual("<a:t></a:t>", blank_out_text("<a:t>(700 +/-) </a:t>"))
+        self.assertEqual("A<a:t></a:t>B<a:t></a:t>C", blank_out_text("A<a:t>(700 +/-) </a:t>B<a:t>XXX</a:t>C"))
 
-        #self.assertEqual(b"ABC", strip_answers(b"A<a:p>...</a:p>B<a:p>The Answer<a:t>@a</a:t></a:r>d</a:p>C"))
+    def testRemove(self):
+        self.assertEqual("AB", strip_answers("AB"))
+        self.assertEqual("A<a:p><a:t></a:t><a:t></a:t></a:r>d</a:p>B", strip_answers("A<a:p><a:t>The Answer</a:t><a:t>@a</a:t></a:r>d</a:p>B"))
+        self.assertEqual("A<a:p><a:t></a:t><a:t></a:t></a:r>d</a:p>BC<a:p><a:t></a:t><a:t></a:t></a:r>d</a:p>D", strip_answers("A<a:p><a:t>The Answer</a:t><a:t>@a</a:t></a:r>d</a:p>BC<a:p><a:t>The Answer</a:t><a:t>@a</a:t></a:r>d</a:p>D"))
+        self.assertEqual(
+                'A<a:p><a:r><a:rPr lang="en-US" sz="2400" dirty="0" /><a:t></a:t></a:r><a:r><a:rPr lang="en-US" sz="2400" dirty="0" smtClean="0" /><a:t></a:t></a:r><a:r><a:rPr lang="en-US" sz="2400" dirty="0" smtClean="0" /><a:t></a:t></a:r><a:r><a:rPr lang="en-US" sz="2400" dirty="0" smtClean="0" /><a:t></a:t></a:r><a:r><a:rPr lang="en-US" sz="500" baseline="-25000" dirty="0" smtClean="0" /><a:t></a:t></a:r><a:endParaRPr lang="en-US" sz="500" baseline="-25000" dirty="0" /></a:p>B',
+                strip_answers('A<a:p><a:r><a:rPr lang="en-US" sz="2400" dirty="0" /><a:t>   </a:t></a:r><a:r><a:rPr lang="en-US" sz="2400" dirty="0" smtClean="0" /><a:t>(</a:t></a:r><a:r><a:rPr lang="en-US" sz="2400" dirty="0" smtClean="0" /><a:t>700 </a:t></a:r><a:r><a:rPr lang="en-US" sz="2400" dirty="0" smtClean="0" /><a:t>+/-) </a:t></a:r><a:r><a:rPr lang="en-US" sz="500" baseline="-25000" dirty="0" smtClean="0" /><a:t>@a</a:t></a:r><a:endParaRPr lang="en-US" sz="500" baseline="-25000" dirty="0" /></a:p>B'))
+
+
+        self.assertEqual("A<a:p>...</a:p>B<a:p><a:t></a:t><a:t></a:t></a:r>d</a:p>C", strip_answers("A<a:p>...</a:p>B<a:p><a:t>The Answer</a:t><a:t>@a</a:t></a:r>d</a:p>C"))
 
 
 if __name__ == '__main__':
@@ -85,5 +101,6 @@ if __name__ == '__main__':
         else:
             print("You need to drag your .pptx file(s) onto this one.")
     finally:
-        input("Press any key to quit.")
+        #input("Press any key to quit.")
+        pass
 
