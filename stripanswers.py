@@ -70,7 +70,7 @@ def strip_answers(s):
     end_str = "</a:p>"
     endpos = s.find(end_str, marker_pos) + len(end_str)
     anspar = s[start:endpos]
-    return s[:start] + blank_out_text(anspar) + strip_answers(s[endpos:])
+    return s[:start] + remove_bullet(blank_out_text(anspar)) + strip_answers(s[endpos:])
 
 def blank_out_text(s):
     m = re.match(r'(.*?<a:t>)(.*?)(</a:t>)(.*$)', s)
@@ -81,6 +81,9 @@ def blank_out_text(s):
     # Replace the string with a blank else we lose the vertical space for the line
     return g[0] + " " + g[2] + blank_out_text(g[3])
 
+def remove_bullet(s):
+    return re.sub(r'<a:buChar char="." />', "", s, count=1)
+    
 class Test(unittest.TestCase):
     def testClearAT(self):
         self.assertEqual("<a:t> </a:t>", blank_out_text("<a:t>(700 +/-) </a:t>"))
@@ -95,9 +98,10 @@ class Test(unittest.TestCase):
         self.assertEqual(
                 'A<a:p><a:r><a:rPr lang="en-US" sz="2400" dirty="0" /><a:t> </a:t></a:r><a:r><a:rPr lang="en-US" sz="2400" dirty="0" smtClean="0" /><a:t> </a:t></a:r><a:r><a:rPr lang="en-US" sz="2400" dirty="0" smtClean="0" /><a:t> </a:t></a:r><a:r><a:rPr lang="en-US" sz="2400" dirty="0" smtClean="0" /><a:t> </a:t></a:r><a:r><a:rPr lang="en-US" sz="500" baseline="-25000" dirty="0" smtClean="0" /><a:t> </a:t></a:r><a:endParaRPr lang="en-US" sz="500" baseline="-25000" dirty="0" /></a:p>B',
                 strip_answers('A<a:p><a:r><a:rPr lang="en-US" sz="2400" dirty="0" /><a:t>   </a:t></a:r><a:r><a:rPr lang="en-US" sz="2400" dirty="0" smtClean="0" /><a:t>(</a:t></a:r><a:r><a:rPr lang="en-US" sz="2400" dirty="0" smtClean="0" /><a:t>700 </a:t></a:r><a:r><a:rPr lang="en-US" sz="2400" dirty="0" smtClean="0" /><a:t>+/-) </a:t></a:r><a:r><a:rPr lang="en-US" sz="500" baseline="-25000" dirty="0" smtClean="0" /><a:t>@a</a:t></a:r><a:endParaRPr lang="en-US" sz="500" baseline="-25000" dirty="0" /></a:p>B'))
-
-
         self.assertEqual("A<a:p>...</a:p>B<a:p><a:t> </a:t><a:t> </a:t></a:r>d</a:p>C", strip_answers("A<a:p>...</a:p>B<a:p><a:t>The Answer</a:t><a:t>@a</a:t></a:r>d</a:p>C"))
+
+    def testRemoveBullet(self):
+        self.assertEquals('<a:p></a:p>', remove_bullet('<a:p><a:buChar char="•" /></a:p>'))
 
 
 if __name__ == '__main__':
@@ -120,4 +124,5 @@ if __name__ == '__main__':
     finally:
         #input("Press any key to quit.")
         pass
+
 
