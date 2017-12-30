@@ -1,0 +1,28 @@
+#
+# Assumes x.pptx and x-noans.pptx is present and extracts slideN from both sets
+# and copies them to slideN-a.xml and slideN-n.xml respectively.
+#
+if [ $# -ne 2 ]
+then
+    echo Usage: $0 PPTX SLIDE
+    exit 1
+fi
+template=/tmp/get-slide-pair.XXX
+tmpdir=$(mktemp -d $template)
+if [ ! -d $tmp ]
+then
+    echo Creation of $template failed
+    exit 1
+fi
+trap "rm -rf $tmpdir" EXIT
+srcdir=$PWD
+cd $tmpdir
+xml=ppt/slides/slide$2.xml
+jar xvf $srcdir/$1 $xml
+touch $xml
+mv $xml $srcdir/slide$2-a.xml
+jar xvf $srcdir/$(echo $1 | sed 's/.pptx/-noans.pptx/') $xml
+touch $xml
+mv $xml $srcdir/slide$2-n.xml
+
+
